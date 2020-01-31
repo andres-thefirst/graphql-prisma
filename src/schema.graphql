@@ -3,7 +3,7 @@
     posts(query: String): [Post!]!
     me: User!
     post: Post!
-    comments: [Comment!]!
+    comments(query: String): [Comment!]!
   }
 
   type Mutation {
@@ -26,13 +26,11 @@
   input CreateUserInput {
     name: String!
     email: String!
-    age: Int
   }
 
   input UpdateUserInput {
     name: String
     email: String
-    age: Int
   }
 
   input CreatePostInput {
