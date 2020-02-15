@@ -1,56 +1,67 @@
-import uuidv4 from 'uuid/v4';
+import  bcryptjs from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+
+import getUserId from '../utils/getUserId';
 
 const Mutation = {
   async createUser(parent, args, {prisma}, info) {
     const {data} = args;
-    return  prisma.mutation.createUser({ data }, info);
+
+    if (data.password.length < 8) {
+      throw new Error('Password must be 8 characters or longer.');
+    }
+
+  const password = await bcryptjs.hash(data.password, 10);
+  const user = await prisma.mutation.createUser({ 
+      data: {
+        ...data,
+        password
+      }
+    });
+
+    return {
+      token: jwt.sign({ userId: user.id}, 'thisisasecret'),
+      user
+    }
   },
-  async deleteUser(parent, args, {prisma}, info) {
+  async deleteUser(parent, args, {prisma, request}, info) {
+    const userId = getUserId(request);
+
     return prisma.mutation.deleteUser( {
       where: {
-        id
+        id: userId
       }
     }, info);
   },
-  updateUser(parent, args, {db, prisma}, info) {
-    const {id, data} = args;
+  updateUser(parent, args, {prisma, request}, info) {
+    const userId = getUserId(request);
+    const {data} = args;
     return prisma.mutation.updateUser({
       where: {
-        id
+        id: userId
       },
       data
     }, info);
   },
-  createPost(parent, args, { prisma }, info) {
+  createPost(parent, args, { prisma, request }, info) {
+    const userId = getUserId(request);
     const {data} = args;
-    return prisma.mutation.createPost({data: {...data, author: {connect: {id: data.author}}}}, info);
-    // const {author, published} =  args.data;
-    // const userExists = db.users.some((item) => item.id === author);
-
-    // if (!userExists) {
-    //   throw new Error('User not found');
-    // }
-
-    // const post = {
-    //   id: uuidv4(),
-    //   ...args.data
-    // };
-
-    // db.posts.push(post);
-
-    // if (published === true) {
-    //   pubsub.publish(`post`, { 
-    //     post: {
-    //       mutation: 'CREATED',
-    //       data: post
-    //     } 
-    //   });
-    // }
-
-    // return post;
+    return prisma.mutation.createPost({data: {...data, author: {connect: {id: userId}}}}, info);
   },
-  updatePost(parent, args, {prisma}, info) {
+  async updatePost(parent, args, {prisma, request}, info) {
+    const userId = getUserId(request);
     const { id, data: {title, body, published} } = args;
+
+    const postExists = await prisma.exists.Post({
+      id,
+      author: {
+        id: userId
+      }
+    });
+
+    if(!postExists) {
+      throw new Error('Unable to update post');
+    }
 
     return prisma.mutation.updatePost({
       where: {
@@ -61,23 +72,36 @@ const Mutation = {
       }
     }, info);
   }, 
-  deletePost(parent, args, {prisma}, info) {
+  async deletePost(parent, args, {prisma, request}, info) {
+    const userId = getUserId(request);
     const {id} = args;
+    const postExists = await prisma.exists.Post({
+      id,
+      author: {
+        id: userId
+      }
+    });
+
+    if(!postExists) {
+      throw new Error('Unable to delete post');
+    }
+
+
     return prisma.mutation.deletePost({
       where: {
-        id
+        id: id
       }
     }, info);
   },
-  createComment(parent, args, {prisma }, info) {
-    const {text, author, post} = args.data;
-    console.log(text, author, post);
+  createComment(parent, args, {prisma, request }, info) {
+    const userId = getUserId(request);
+    const {text, post} = args.data;
     return prisma.mutation.createComment({
       data: {
         text,
         author: {
           connect: {
-            id: author
+            id: userId
           }
         },
         post: {
@@ -104,6 +128,24 @@ const Mutation = {
       },
       data
     }, info);
+  },
+  async login(parent, args, {prisma}, info) {
+    const {data} = args;
+    const user = await prisma.query.user({where:{ email: data.email }});
+    if (!user) {
+      throw new Error("Unable to login");
+    }
+
+    const isMatch = await bcryptjs.compare(data.password, user.password);
+
+    if (!isMatch) {
+      throw new Error("Unable to login");
+    }
+
+    return {
+      token: jwt.sign({ userId: user.id}, 'thisisasecret'),
+      user
+    }
   }
 }
 
