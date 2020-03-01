@@ -23,6 +23,7 @@
   type Subscription {
     comment(postId: ID!): CommentSubscriptionPayload!
     post: PostSubscriptionPayload!
+    myPost: PostSubscriptionPayload!
   }
 
   type AuthPayload {
@@ -39,6 +40,8 @@
   input UpdateUserInput {
     name: String
     email: String
+    password: String
+
   }
 
   input CreatePostInput {
