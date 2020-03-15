@@ -1,11 +1,13 @@
 import jwt from 'jsonwebtoken';
 
+const JWT_SECRET = process.env.PRISMA_JWT_SECRET;
+
 const getUserId = (request, requireAuth = true) => {
   const header =  request.request ? request.request.headers.authorization :  request.connection.context.Authorization;
 
   if  (header) {
     const token = header.replace('Bearer ', '');
-    const decoded = jwt.verify(token, 'thisisasecret');
+    const decoded = jwt.verify(token, JWT_SECRET);
     return decoded.userId;
   }
 
