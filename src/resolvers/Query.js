@@ -3,8 +3,10 @@ import getUserId from '../utils/getUserId';
 const Query = {
   // parent, args, context, info
   users(parent, args, {prisma}, info) {
-    const {query} = args;
-    const opArgs = {};
+    const {query, first, skip, after, orderBy} = args;
+    const opArgs = {
+      first,skip, after, orderBy
+    };
 
     if (query) {
       opArgs.where = {
@@ -18,13 +20,14 @@ const Query = {
   },
   async myPosts(parent, args, {prisma, request}, info) {
     const userId = getUserId(request);
-    const {query} = args;
+    const {query, first, skip, after, orderBy} = args;
     const opArgs = {
       where: {
         author: {
           id: userId
         }
-      }
+      },
+      first, skip, after, orderBy
     };
 
     if (query &&  typeof query === "string") {
@@ -41,11 +44,12 @@ const Query = {
     return prisma.query.posts(opArgs, info);
   },
   posts(parent, args, {prisma}, info) {
-    const {query} = args;
+    const {query, first, skip, after, orderBy} = args;
     const opArgs = {
       where: {
         published: true
-      }
+      },
+      first, skip, after, orderBy
     };
 
     if (query &&  typeof query === "string") {
@@ -69,8 +73,8 @@ const Query = {
     // }); 
   },
   comments(parent, args, {prisma}, info) {
-    const {query} = args;
-    const opArgs = {};
+    const {query,first, skip, after} = args;
+    const opArgs = {first, skip, after};
 
     if (query) {
       opArgs.where = {
