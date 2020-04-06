@@ -1,5 +1,4 @@
 import 'cross-fetch/polyfill';
-import { gql } from 'apollo-boost';
 
 import seedDatabse, {userOne, postOne, postTwo} from './utils/seedDatabase';
 import getClient from './utils/getClient';
@@ -7,6 +6,8 @@ import prisma from '../src/prisma';
 import {getPosts, myPosts, updatePost, createPost, deletePost } from './utils/operations';
 
 const client =  getClient();
+
+jest.setTimeout(30000);
 
 beforeEach(seedDatabse);
 
